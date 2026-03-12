@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from myhdl import *
 from ula_modules import *
-
+from ula import bin2hex
 
 @block
 def toplevel(LEDR, SW, KEY, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, CLOCK_50, RESET_N):
@@ -15,16 +15,14 @@ def toplevel(LEDR, SW, KEY, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, CLOCK_50, RESET_
     # ---------------------------------------- #
     ic1 = adder(sw_s[0:4], sw_s[6:10], ledr_s[0:4], ledr_s[9])
 
-    # ledr_unsigned = ConcatSignal(*reversed(ledr_s))
-    # ic2 = bin2hex(HEX0, ledr_unsigned)
+    result = ConcatSignal(ledr_s[9], *reversed(ledr_s[0:4]))
+    ic2 = bin2hex(HEX0, result)
 
     @always_comb
-    def comb():
+    def comb():     
         for i in range(len(ledr_s)):
             LEDR[i].next = ledr_s[i]
-
-    return instances()
-
+        return instances()
 
 LEDR = Signal(intbv(0)[10:])
 SW = Signal(intbv(0)[10:])

@@ -26,25 +26,23 @@ def halfAdder(a, b, soma, carry):
     """
     @always_comb
     def comb():
-        pass
+        soma.next = a ^ b 
+        carry.next = a and b
 
     return instances()
 
-
 @block
 def fullAdder(a, b, c, soma, carry):
-    """Somador completo de 1 bit.
+    s1 = Signal(bool(0)) # (1)
+    s2 = Signal(bool(0)) 
+    s3 = Signal(bool(0))
 
-    Args:
-        a: Primeira entrada de 1 bit.
-        b: Segunda entrada de 1 bit.
-        c: Carry de entrada.
-        soma: Saida de soma.
-        carry: Carry de saida.
-    """
+    half_1 = halfAdder(a, b, s1, s2) 
+    half_2 = halfAdder(c, s1, soma, s3) 
+
     @always_comb
     def comb():
-        pass
+        carry.next = s2 | s3 
 
     return instances()
 
@@ -53,49 +51,73 @@ def fullAdder(a, b, c, soma, carry):
 def adder2bits(x, y, soma, carry):
     """Somador de 2 bits.
 
-    Implementacao esperada com dois full adders, gerando
-    uma soma de 2 bits e carry final.
+    Implementacao esperada com dois full adders,
+    gerando uma soma de 2 bits e carry final.
 
     Args:
-        x: Vetor de entrada de 2 bits.
-        y: Vetor de entrada de 2 bits.
+        x: Vetor de entrada de 2 bits. 
+        y: Vetor de entrada de 2 bits. 
         soma: Vetor de saida de 2 bits.
         carry: Carry de saida.
     """
+
+    c0 = Signal(bool(0))
+    fa0 = fullAdder(
+        a=x[0],
+        b=y[0],
+        c=Signal(bool(0)),  
+        soma=soma[0],
+        carry=c0
+    )
+    fa1 = fullAdder(
+        a=x[1],
+        b=y[1],
+        c=c0,
+        soma=soma[1],
+        carry=carry
+    )
+
     return instances()
+
 
 
 @block
 def adder(x, y, soma, carry):
-    """Somador generico para vetores de mesmo tamanho.
 
-    Implementacao esperada por ripple-carry (encadeamento de carries)
-    usando celulas de full adder.
+    n = len(x)
 
-    Args:
-        x: Vetor de entrada.
-        y: Vetor de entrada.
-        soma: Vetor de saida com mesma largura de x/y.
-        carry: Carry de saida mais significativo.
-    """
-    return instances()
+    carries = [Signal(bool(0)) for _ in range(n + 1)]
+
+    fas = []
+
+    for i in range(n):
+        fa = fullAdder(
+            x[i],
+            y[i],
+            carries[i],      
+            soma[i],
+            carries[i+1]    
+        )
+        fas.append(fa)
+
+    @always_comb
+    def assign():
+        carry.next = carries[n]
+
+    return fas, assign
 
 
 @block
 def addervb(x, y, soma, carry):
-    """Somador vetorial em estilo comportamental.
 
-    Versao combinacional que pode usar operacoes aritmeticas diretas
-    sobre os vetores para gerar soma e carry.
+    n = len(x)
+    mask = (1 << n) - 1
 
-    Args:
-        x: Vetor de entrada.
-        y: Vetor de entrada.
-        soma: Vetor de saida.
-        carry: Carry de saida.
-    """
     @always_comb
     def comb():
-        pass
+        total = int(x) + int(y)
 
-    return instances()
+        soma.next = total & mask
+        carry.next = bool((total >> n) & 1)
+
+    return comb
